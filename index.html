@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>BeaverDirect</title>
+
+  <!-- Launch from the iPad home screen for a fullscreen, browser-chrome-free app feel -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BeaverDirect">
+  <meta name="theme-color" content="#ef4539">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Roc Grotesk is an Adobe Fonts typeface: paste your Adobe Fonts kit <link> here
+       (e.g. <link rel="stylesheet" href="https://use.typekit.net/XXXXXXX.css">).
+       Until then, Archivo is used as a stand-in. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anybody:ital,wght@1,800;1,900&family=Archivo:wdth,wght@100..125,400..700&display=swap">
+
+  <style>
+    :root {
+      --red: #ef4539;
+      --yellow: #fce55f;
+      --black: #000;
+      --white: #fff;
+      --font-body: "roc-grotesk", "Roc Grotesk", "Archivo", system-ui, sans-serif;
+      --font-display: "Anybody", system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      background: var(--red);
+    }
+
+    body {
+      /* Behave like a native app, not a web page */
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    img { -webkit-user-drag: none; pointer-events: none; }
+
+    /* Exactly the size of the screen, and clips anything outside it, so
+       Safari never sees content wider/taller than the viewport (which would
+       make it zoom out and let the page scroll) */
+    .viewport {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    /* Artboard designed at the Figma frame size (iPad 11" landscape, 1194x834).
+       JS scales it from the top-left corner and sizes it so that, once
+       scaled, it covers the viewport exactly */
+    .stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1194px;
+      height: 834px;
+      transform-origin: 0 0;
+      transform: scale(var(--scale, 1));
+    }
+
+    /* Screens fill the stage; only the active one is visible */
+    .screen {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 250ms ease, visibility 0s linear 250ms;
+    }
+
+    .screen.is-active {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 250ms ease;
+    }
+
+    .screen--welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Logo */
+    .logo-mark {
+      position: relative;
+      width: 174.741px;
+      height: 174.741px;
+    }
+
+    .logo-mark__circle {
+      position: absolute;
+      top: -4.379px;
+      left: -4.379px;
+    }
+
+    .logo-mark__beaver {
+      position: absolute;
+      left: 20.7px;
+      top: 23.95px;
+      width: 133.115px;
+      height: 129.674px;
+      overflow: hidden;
+      transform: rotate(1.73deg);
+    }
+
+    .logo-mark__beaver img {
+      position: absolute;
+      left: -66.07%;
+      top: -41.38%;
+      width: 220.68%;
+      height: 169.82%;
+      max-width: none;
+    }
+
+    .wordmark {
+      display: block;
+      margin-top: 27px;
+    }
+
+    /* Copy */
+    .tagline {
+      width: 658px;
+      margin: 66.5px 0 0;
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 32px;
+      line-height: 40px;
+      letter-spacing: -0.32px;
+      text-align: center;
+      color: var(--white);
+    }
+
+    /* Button */
+    .btn {
+      position: relative;
+      margin-top: 67px;
+      min-width: 269.3px;
+      padding: 32px;
+      border: 3.651px solid var(--black);
+      border-radius: 10.954px;
+      background: var(--yellow);
+      color: var(--black);
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-style: italic;
+      font-stretch: 100%;
+      font-size: 27.385px;
+      line-height: 28px;
+      letter-spacing: -1.3692px;
+      white-space: nowrap;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      transition: transform 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    .btn:focus { outline: none; }
+    .btn:focus-visible { outline: 3px solid var(--white); outline-offset: 4px; }
+
+    .btn.is-pressed {
+      transform: scale(0.96);
+      background: #f3d647;
+    }
+
+    .btn__label { display: block; transition: opacity 150ms ease; }
+
+    .btn__spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 30px;
+      height: 30px;
+      margin: -15px 0 0 -15px;
+      border: 4px solid rgba(0, 0, 0, 0.18);
+      border-top-color: var(--black);
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 150ms ease;
+    }
+
+    .btn.is-loading { pointer-events: none; }
+    .btn.is-loading .btn__label { opacity: 0; }
+    .btn.is-loading .btn__spinner { opacity: 1; animation: spin 700ms linear infinite; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- Form screen ---------- */
+    /* Header sticks to the top, summary to the bottom; the middle takes up
+       whatever height is left (and scrolls if it ever runs out of room).
+       Content stays 922px wide, centred. */
+    .screen--form {
+      display: flex;
+      flex-direction: column;
+      padding: 46px calc(50% - 461px) 50px;
+      color: var(--white);
+    }
+
+    .form-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: none;
+    }
+
+    .form-body::-webkit-scrollbar { display: none; }
+
+    /* Small horizontal logo: same mark as the welcome screen, scaled down */
+    .logo-mark--small {
+      width: 49.387px;
+      height: 49.387px;
+    }
+
+    .logo-mark--small .logo-mark__circle {
+      top: -2.184px;
+      left: -2.184px;
+    }
+
+    .logo-mark--small .logo-mark__beaver {
+      left: 6.756px;
+      top: 5.92px;
+      width: 37.622px;
+      height: 36.65px;
+    }
+
+    .logo-horizontal {
+      display: flex;
+      align-items: center;
+      gap: 18.612px;
+    }
+
+    .form-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 22px;
+      border-bottom: 2px solid var(--white);
+    }
+
+    .form-header__right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .timer {
+      margin: 0;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 18px;
+      line-height: normal;
+      white-space: nowrap;
+    }
+
+    /* Time's up: blink yellow/white, and keep going until the form closes */
+    .timer.is-expired { animation: timer-flash 700ms steps(1) infinite; }
+
+    @keyframes timer-flash {
+      0%   { color: var(--yellow); }
+      50%  { color: var(--white); }
+    }
+
+    .close-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: 2px solid var(--white);
+      border-radius: 20px;
+      background: transparent;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .headline {
+      width: 738px;
+      margin: 26.6px 0 0;
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-style: italic;
+      font-size: 42px;
+      line-height: 1.1;
+      letter-spacing: -1.68px;
+    }
+
+    .cover-columns {
+      display: flex;
+      align-items: flex-start;
+      gap: 28px;
+      margin-top: 36px;
+    }
+
+    .cover-group {
+      flex: 1 1 0;
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .section-title {
+      display: block;
+      padding: 0;
+      margin-bottom: 12px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-style: italic;
+      font-size: 22px;
+      line-height: normal;
+      letter-spacing: -0.44px;
+      color: var(--yellow);
+    }
+
+    .cover-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 0;
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 20px;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+
+    .checkbox__input {
+      flex: none;
+      width: 24px;
+      height: 24px;
+      margin: 0;
+      border: 2.5px solid var(--white);
+      border-radius: 6px;
+      background: transparent;
+      -webkit-appearance: none;
+      appearance: none;
+      cursor: pointer;
+      transition: background-color 120ms ease, border-color 120ms ease, transform 120ms ease;
+    }
+
+    .checkbox:active .checkbox__input { transform: scale(0.88); }
+
+    .checkbox__input:checked {
+      border-color: var(--yellow);
+      background: var(--yellow) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.5l3 3 6-7' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat;
+    }
+
+    .checkbox:has(.checkbox__input:checked) {
+      color: var(--yellow);
+      font-weight: 700;
+    }
+
+    .summary {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 24px;
+      margin-top: 27px;
+      padding-top: 22px;
+      border-top: 2px solid var(--white);
+    }
+
+    .price-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      font-family: var(--font-display);
+      font-style: italic;
+      line-height: normal;
+      white-space: nowrap;
+    }
+
+    .price-row__label {
+      margin: 0;
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.44px;
+    }
+
+    .price-row__total {
+      margin: 0;
+      font-weight: 900;
+      font-size: 32px;
+      letter-spacing: -0.64px;
+      font-variant-numeric: tabular-nums;
+      transform-origin: right center;
+    }
+
+    .price-row__total.is-bumped { animation: bump 350ms ease; }
+
+    @keyframes bump {
+      40% { transform: scale(1.08); color: var(--yellow); }
+    }
+
+    .btn--confirm {
+      margin-top: 0;
+      min-width: 0;
+      padding: 20.5px 28.5px;
+      border-width: 3.5px;
+      border-radius: 12px;
+      font-size: 20px;
+      line-height: normal;
+      letter-spacing: -0.4px;
+      box-shadow: 0 4px 0 var(--black);
+    }
+
+    /* ---------- Offer letter screen ---------- */
+    /* Same 922px column and header as the form; the whole screen scrolls
+       because the letter is taller than the iPad */
+    .screen--letter {
+      padding: 46px calc(50% - 461px) 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: none;
+    }
+
+    .screen--letter::-webkit-scrollbar { display: none; }
+
+    .letter {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      min-height: 1216px;
+      margin-top: 48.6px;
+      padding: 43px 0;
+      border-radius: 4px;
+      background: var(--white);
+      color: var(--black);
+      transform-origin: 50% 0;
+    }
+
+    .logo-mark--letter {
+      flex: none;
+      width: 148px;
+      height: 148px;
+    }
+
+    .logo-mark--letter .logo-mark__circle { top: 0; left: 0; }
+
+    .logo-mark--letter .logo-mark__beaver {
+      left: 17.536px;
+      top: 20.38px;
+      width: 112.744px;
+      height: 109.83px;
+    }
+
+    .letter__headline {
+      width: 763px;
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-style: italic;
+      font-size: 42px;
+      line-height: 1.1;
+      letter-spacing: -1.68px;
+      color: var(--red);
+    }
+
+    .letter__body {
+      width: 763px;
+      font-family: var(--font-body);
+      font-weight: 400;
+      font-size: 24px;
+      line-height: 1.1;
+      letter-spacing: -0.96px;
+    }
+
+    /* One blank line between blocks, as in the design */
+    .letter__body > * { margin: 0; }
+    .letter__body > * + * { margin-top: 1.1em; }
+
+    .letter__body h3,
+    .letter__body strong {
+      font: inherit;
+      font-weight: 700;
+    }
+
+    .letter__body div > * { margin: 0; }
+
+    .letter__body ul {
+      padding: 0;
+      list-style: disc outside;
+    }
+
+    .letter__body li { margin-left: 36px; }
+
+    /* Bottom spacing lives here, not on the screen: Safari drops bottom
+       padding at the end of a scrolling container */
+    .letter-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 21px;
+      padding-bottom: 64px;
+    }
+
+    .btn--secondary { background: #ede3d9; }
+    .btn--secondary.is-pressed { background: #ddd2c7; }
+
+    /* Letter slides up into view, overshoots slightly and settles */
+    .screen--letter.is-active .letter {
+      animation: letter-in 1100ms linear 200ms both;
+    }
+
+    .screen--letter.is-active .letter-actions {
+      animation: rise-in 400ms ease 1100ms both;
+    }
+
+    @keyframes letter-in {
+      0%   { transform: translateY(820px) rotate(-6deg); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); }
+      70%  { transform: translateY(-14px) rotate(0.6deg); animation-timing-function: ease-in-out; }
+      100% { transform: none; }
+    }
+
+    @keyframes rise-in {
+      from { opacity: 0; transform: translateY(16px); }
+    }
+
+    /* "Nope": shake a button that can't be used yet */
+    .btn.is-refused { animation: refuse 450ms ease; }
+
+    @keyframes refuse {
+      15%, 55% { transform: translateX(-10px) rotate(-2deg); }
+      35%, 75% { transform: translateX(10px) rotate(2deg); }
+      90%      { transform: translateX(-3px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .btn, .btn__label, .btn__spinner, .screen, .checkbox__input { transition: none; }
+      .price-row__total.is-bumped,
+      .screen--letter.is-active .letter,
+      .screen--letter.is-active .letter-actions { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport" id="viewport">
+    <main class="stage" id="stage">
+      <section class="screen screen--welcome is-active" id="screen-welcome" aria-label="Welcome">
+        <div class="logo-mark" role="img" aria-label="BeaverDirect logo">
+          <img class="logo-mark__circle" src="assets/logo-circle.svg" width="183.498" height="183.498" alt="">
+          <div class="logo-mark__beaver">
+            <img src="assets/beaver.png" alt="">
+          </div>
+        </div>
+
+        <img class="wordmark" src="assets/beaverdirect-wordmark.svg" width="443.346" height="46.752" alt="BeaverDirect">
+
+        <p class="tagline">Get a free personal ultra-personalised quote in under a minute</p>
+
+        <button class="btn" id="get-quote" type="button">
+          <span class="btn__label">Get my Quote</span>
+          <span class="btn__spinner" aria-hidden="true"></span>
+        </button>
+      </section>
+
+      <section class="screen screen--form" id="screen-form" aria-label="Choose your cover">
+        <header class="form-header">
+          <div class="logo-horizontal" role="img" aria-label="BeaverDirect">
+            <div class="logo-mark logo-mark--small">
+              <img class="logo-mark__circle" src="assets/logo-circle-small.svg" width="53.755" height="53.755" alt="">
+              <div class="logo-mark__beaver">
+                <img src="assets/beaver.png" alt="">
+              </div>
+            </div>
+            <img src="assets/beaverdirect-wordmark-small.svg" width="221.165" height="23.3224" alt="">
+          </div>
+
+          <div class="form-header__right">
+            <p class="timer"><span id="timer">05:00</span> time left to complete your order</p>
+            <button class="close-btn" id="close-form" type="button" aria-label="Close">
+              <img src="assets/icon-close.svg" width="14" height="14" alt="">
+            </button>
+          </div>
+        </header>
+
+        <div class="form-body">
+          <h1 class="headline">What do you want to be covered for?</h1>
+
+          <div class="cover-columns">
+            <fieldset class="cover-group">
+              <legend class="section-title">Emergency cover:</legend>
+              <div class="cover-list">
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="home-invasion">Home Invasion Cover</label>
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="72h-essentials">72 Hour Emergency Essentials</label>
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="fire-storm">Fire and storm</label>
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="corridor-flood">Beaver Corridor Flood Cover</label>
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="corridor-neglect">Beaver Corridor Neglect Liability</label>
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="flood-non-beaver">Flood (Non beaver-related)</label>
+              </div>
+            </fieldset>
+
+            <fieldset class="cover-group">
+              <legend class="section-title">Foundy lockout cover</legend>
+              <div class="cover-list">
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="foundational-access">Loss of foundational service access or hub eligibility</label>
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="culture-twin">Culture Twin Licensing Dispute</label>
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="data-resale">Data Resale Opt-Out Protection</label>
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="returner-bridging">Foundy returner's bridging Cover</label>
+                <label class="checkbox"><input class="checkbox__input" type="checkbox" name="cover" value="sponger-defamation">"Sponger" Defamation Cover</label>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="price-row">
+            <p class="price-row__label">Selected Premium</p>
+            <p class="price-row__total">Total: £<span id="total">0.00</span></p>
+          </div>
+          <button class="btn btn--confirm" id="confirm-coverage" type="button">
+            <span class="btn__label">Confirm Coverage</span>
+            <span class="btn__spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </section>
+
+      <section class="screen screen--letter" id="screen-letter" aria-label="Your offer">
+        <header class="form-header">
+          <div class="logo-horizontal" role="img" aria-label="BeaverDirect">
+            <div class="logo-mark logo-mark--small">
+              <img class="logo-mark__circle" src="assets/logo-circle-small.svg" width="53.755" height="53.755" alt="">
+              <div class="logo-mark__beaver">
+                <img src="assets/beaver.png" alt="">
+              </div>
+            </div>
+            <img src="assets/beaverdirect-wordmark-small.svg" width="221.165" height="23.3224" alt="">
+          </div>
+
+          <button class="close-btn" id="close-letter" type="button" aria-label="Close">
+            <img src="assets/icon-close.svg" width="14" height="14" alt="">
+          </button>
+        </header>
+
+        <article class="letter">
+          <div class="logo-mark logo-mark--letter" role="img" aria-label="BeaverDirect logo">
+            <img class="logo-mark__circle" src="assets/logo-circle-letter.svg" width="148" height="148" alt="">
+            <div class="logo-mark__beaver">
+              <img src="assets/beaver.png" alt="">
+            </div>
+          </div>
+
+          <h2 class="letter__headline">You’ve got a great deal</h2>
+
+          <div class="letter__body">
+            <div>
+              <h3>You're switching to Beaver Direct</h3>
+              <p>You're leaving the Foundational Access Guarantee and taking out independent cover instead.</p>
+            </div>
+
+            <p>No more shifts, No more hub queues.</p>
+
+            <p>Just your own policy, built for you.</p>
+
+            <div>
+              <h3>Your Selection:</h3>
+              <ul id="letter-selection"><!-- filled from the ticked boxes --></ul>
+            </div>
+
+            <p>
+              <strong>Weekly Total: £<span id="weekly-total">42.87</span></strong><br>
+              (includes +£6.10 local corridor flood risk adjustment — 3 more households opted out on your street this month)
+            </p>
+
+            <div>
+              <h3>What Happens Next</h3>
+              <ul>
+                <li>Your Foundational Access will lapse in <strong>14 days</strong>. You'll lose hub booking priority, and community hub rota placements.</li>
+                <li>You wont be able to use your local neighbourhood hub.</li>
+                <li>Your Eligibility Score will begin adjusting. This may affect re-entry terms if you return to the civic system later.</li>
+                <li>You can hand back your Civicband and will no longer be recorded in the local Culture Twin, unless you've separately opted into <strong>Culture Twin Licensing.</strong></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3>Your Beaver Pack</h3>
+              <p>A welcome sticker, badge, and access to the Beaver Direct community group are on their way!</p>
+            </div>
+          </div>
+        </article>
+
+        <div class="letter-actions">
+          <button class="btn btn--confirm btn--secondary" id="start-over" type="button">
+            <span class="btn__label">Start over</span>
+          </button>
+          <button class="btn btn--confirm" id="accept-offer" type="button">
+            <span class="btn__label">Accept offer</span>
+            <span class="btn__spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Not in Figma: mirrors the welcome screen -->
+      <section class="screen screen--welcome" id="screen-lodge" aria-label="Welcome to the Lodge">
+        <div class="logo-mark" role="img" aria-label="BeaverDirect logo">
+          <img class="logo-mark__circle" src="assets/logo-circle.svg" width="183.498" height="183.498" alt="">
+          <div class="logo-mark__beaver">
+            <img src="assets/beaver.png" alt="">
+          </div>
+        </div>
+
+        <img class="wordmark" src="assets/beaverdirect-wordmark.svg" width="443.346" height="46.752" alt="BeaverDirect">
+
+        <p class="tagline">Welcome to the Lodge</p>
+
+        <button class="btn" id="lodge-start-over" type="button">
+          <span class="btn__label">Start over</span>
+        </button>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var DESIGN_W = 1194;
+      var DESIGN_H = 834;
+      var viewport = document.getElementById('viewport');
+      var stage = document.getElementById('stage');
+
+      // Scale so the design fits, then stretch the stage to cover the whole
+      // viewport so screens can pin content to the real top and bottom edges
+      function fit() {
+        var vw = viewport.clientWidth;
+        var vh = viewport.clientHeight;
+        var scale = Math.min(vw / DESIGN_W, vh / DESIGN_H);
+        stage.style.setProperty('--scale', scale);
+        stage.style.width = vw / scale + 'px';
+        stage.style.height = vh / scale + 'px';
+      }
+      fit();
+      window.addEventListener('resize', fit);
+      window.addEventListener('orientationchange', fit);
+
+      // Block pinch-zoom and double-tap zoom so the prop never "breaks"
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (type) {
+        document.addEventListener(type, function (e) { e.preventDefault(); });
+      });
+      var lastTouchEnd = 0;
+      document.addEventListener('touchend', function (e) {
+        var now = Date.now();
+        if (now - lastTouchEnd < 300) e.preventDefault();
+        lastTouchEnd = now;
+      }, { passive: false });
+      document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+      function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(function (screen) {
+          screen.classList.toggle('is-active', screen.id === id);
+        });
+        if (id === 'screen-letter') {
+          document.getElementById('screen-letter').scrollTop = 0;
+        }
+        if (id === 'screen-form') {
+          startTimer();
+        } else {
+          clearInterval(timerId);
+          setTimeout(resetForm, 300); // after the fade-out, so it's not seen
+        }
+      }
+
+      // ---------- Form: countdown ----------
+      var COUNTDOWN_SECONDS = 5 * 60;
+      var timerEl = document.getElementById('timer');
+      var timerId = null;
+      var secondsLeft = COUNTDOWN_SECONDS;
+
+      function renderTimer() {
+        var m = Math.floor(secondsLeft / 60);
+        var s = secondsLeft % 60;
+        timerEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      }
+
+      function startTimer() {
+        clearInterval(timerId);
+        secondsLeft = COUNTDOWN_SECONDS;
+        renderTimer();
+        timerEl.parentElement.classList.remove('is-expired');
+        timerId = setInterval(function () {
+          if (secondsLeft > 0) secondsLeft--;
+          renderTimer();
+          if (secondsLeft === 0) {
+            clearInterval(timerId);
+            timerEl.parentElement.classList.add('is-expired');
+            if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
+          }
+        }, 1000);
+      }
+
+      // ---------- Form: premium ----------
+      // Every tick adds, and every untick removes, a fresh random £5–£40.
+      // The amounts are deliberately not tied to the items.
+      var BASE_PREMIUM = 0;
+      var totalEl = document.getElementById('total');
+      var totalWrap = totalEl.parentElement;
+      var premium = BASE_PREMIUM;
+      var shownPremium = BASE_PREMIUM;
+      var animId = null;
+      var settleId = null;
+
+      function randomAmount() {
+        return Math.round((5 + Math.random() * 35) * 100) / 100;
+      }
+
+      function renderPremium(value) {
+        totalEl.textContent = value.toFixed(2);
+      }
+
+      // Roll the number from its current value to the new one
+      function animatePremium(to) {
+        cancelAnimationFrame(animId);
+        var from = shownPremium;
+        var start = performance.now();
+        var duration = 450;
+        (function step(now) {
+          var t = Math.min(Math.max((now - start) / duration, 0), 1);
+          var eased = 1 - Math.pow(1 - t, 3);
+          shownPremium = from + (to - from) * eased;
+          renderPremium(shownPremium);
+          if (t < 1) animId = requestAnimationFrame(step);
+        })(start);
+
+        // Always land on the final value, even if frames get throttled
+        clearTimeout(settleId);
+        settleId = setTimeout(function () {
+          cancelAnimationFrame(animId);
+          shownPremium = to;
+          renderPremium(to);
+        }, duration + 50);
+
+        totalWrap.classList.remove('is-bumped');
+        void totalWrap.offsetWidth; // restart the animation
+        totalWrap.classList.add('is-bumped');
+      }
+
+      var checkboxes = document.querySelectorAll('#screen-form .checkbox__input');
+      checkboxes.forEach(function (box) {
+        box.addEventListener('change', function () {
+          var delta = randomAmount();
+          premium = box.checked ? premium + delta : Math.max(BASE_PREMIUM, premium - delta);
+          premium = Math.round(premium * 100) / 100;
+          if (navigator.vibrate) navigator.vibrate(8);
+          animatePremium(premium);
+        });
+      });
+
+      function resetForm() {
+        clearInterval(timerId);
+        cancelAnimationFrame(animId);
+        clearTimeout(settleId);
+        checkboxes.forEach(function (box) { box.checked = false; });
+        premium = shownPremium = BASE_PREMIUM;
+        renderPremium(premium);
+        secondsLeft = COUNTDOWN_SECONDS;
+        renderTimer();
+        timerEl.parentElement.classList.remove('is-expired');
+      }
+
+      document.getElementById('close-form').addEventListener('click', goHome);
+
+      // Jump straight to a screen while designing, e.g. index.html#screen-form
+      if (location.hash && document.getElementById(location.hash.slice(1))) {
+        showScreen(location.hash.slice(1));
+      }
+
+      // ---------- Buttons ----------
+      // Tactile press on every button
+      document.querySelectorAll('.btn').forEach(function (button) {
+        function press() { button.classList.add('is-pressed'); }
+        function release() { button.classList.remove('is-pressed'); }
+        button.addEventListener('pointerdown', press);
+        button.addEventListener('pointerup', release);
+        button.addEventListener('pointerleave', release);
+        button.addEventListener('pointercancel', release);
+      });
+
+      // Show a short "working on it" spinner, then continue.
+      // If canProceed() says no, the button shakes and nothing happens.
+      function onClickWithLoading(id, delay, done, canProceed) {
+        var button = document.getElementById(id);
+        button.addEventListener('animationend', function (e) {
+          if (e.animationName === 'refuse') button.classList.remove('is-refused');
+        });
+        button.addEventListener('click', function () {
+          if (canProceed && !canProceed()) {
+            button.classList.remove('is-refused');
+            void button.offsetWidth; // restart the shake on repeated taps
+            button.classList.add('is-refused');
+            if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+            return;
+          }
+          if (navigator.vibrate) navigator.vibrate(10);
+          button.classList.add('is-loading');
+          button.setAttribute('aria-busy', 'true');
+          setTimeout(function () {
+            done();
+            button.classList.remove('is-loading');
+            button.removeAttribute('aria-busy');
+          }, delay);
+        });
+      }
+
+      function goHome() { showScreen('screen-welcome'); }
+
+      onClickWithLoading('get-quote', 1400, function () {
+        showScreen('screen-form');
+      });
+
+      function tickedBoxes() {
+        return Array.prototype.filter.call(checkboxes, function (box) { return box.checked; });
+      }
+
+      // Copy the ticked items and final premium into the letter
+      function fillLetter() {
+        var list = document.getElementById('letter-selection');
+        list.innerHTML = '';
+        tickedBoxes().forEach(function (box) {
+          var li = document.createElement('li');
+          li.textContent = box.parentElement.textContent.trim();
+          list.appendChild(li);
+        });
+        document.getElementById('weekly-total').textContent = premium.toFixed(2);
+      }
+
+      onClickWithLoading('confirm-coverage', 1200, function () {
+        fillLetter();
+        showScreen('screen-letter');
+      }, function () {
+        return tickedBoxes().length > 0;
+      });
+
+      onClickWithLoading('accept-offer', 1200, function () {
+        showScreen('screen-lodge');
+      });
+
+      document.getElementById('close-letter').addEventListener('click', goHome);
+      document.getElementById('start-over').addEventListener('click', goHome);
+      document.getElementById('lodge-start-over').addEventListener('click', goHome);
+    })();
+  </script>
+</body>
+</html>
